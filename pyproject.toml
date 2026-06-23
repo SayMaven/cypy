@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cypy"
+version = "0.0.1"
+description = "Cyrene's Ultimate Manga Translator - Auto translate Japanese manga panels to Indonesian using YOLO and Gemini"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "opencv-python",
+    "PyMuPDF",
+    "numpy",
+    "Pillow",
+    "ultralytics",
+    "google-genai",
+    "python-dotenv"
+]
+
+[project.scripts]
+cypy = "cypy.app:main"
+
+[tool.setuptools.packages.find]
+include = ["cypy*"]
