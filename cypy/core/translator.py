@@ -21,7 +21,7 @@ from cypy.core.utils import (
 )
 
 
-def terjemahkan_mosaik(gambar_mosaik_pil, max_retry=3):
+def terjemahkan_mosaik(gambar_mosaik_pil, target_language="Indonesian", max_retry=3):
     """Sends a single mosaic image to Gemini ♪"""
     for percobaan in range(max_retry):
         try:
@@ -31,36 +31,46 @@ def terjemahkan_mosaik(gambar_mosaik_pil, max_retry=3):
 
             client = genai.Client(api_key=GEMINI_API_KEY)
 
+            examples = {
+                "english": ("Hello!", "Mother... wait..."),
+                "indonesian": ("Cepat bangun!", "Ibu... tunggu..."),
+                "spanish": ("¡Despierta rápido!", "Madre... espera..."),
+                "portuguese": ("Acorde rápido!", "Mãe... espere..."),
+                "javanese": ("Ndang tangi!", "Ibu... enteni..."),
+            }
+            lang_key = target_language.lower()
+            example_val_1, example_val_3 = examples.get(lang_key, (examples["english"][0], examples["english"][1]))
+
             prompt = (
-                "You are an accurate, literal Japanese-to-Indonesian manga translator. "
+                f"You are an accurate, literal manga translator from its original language to {target_language}. "
                 "The image contains several speech bubbles arranged vertically. "
-                "Each bubble is prefixed with a LARGE RED NUMBER on its left as its ID. "
+                "Each bubble is prefixed with a LARGE RED NUMBER on its left as its ID. \n\n"
 
-                "MAIN TASK: "
-                "Read the Japanese text in each bubble, then translate it into Indonesian, faithfully preserving the original meaning. "
+                "MAIN TASK:\n"
+                f"Read the text in each bubble, then translate it into {target_language}, faithfully preserving the original meaning. \n\n"
 
-                "VERTICAL READING RULES: "
-                "1. Read vertical text from top to bottom. "
-                "2. If there are multiple vertical columns, read the rightmost column first, then move left. "
-                "3. Do not reverse column orders. "
-                "4. Do not mix text between bubbles. "
+                "VERTICAL READING RULES:\n"
+                "1. Read vertical text from top to bottom. \n"
+                "2. If there are multiple vertical columns, read the rightmost column first, then move left. \n"
+                "3. Do not reverse column orders. \n"
+                "4. Do not mix text between bubbles. \n\n"
 
-                "TRANSLATION RULES: "
-                "1. Translate literally and accurately. Do not make it overly polite, do not summarize, and do not invent content. "
-                "2. Do not add subjects or objects not present in the original Japanese. "
-                "3. Do not alter the relationships between characters. "
-                "4. If the Japanese text is rude, explicit, teasing, degrading, bashful, or begging, maintain that exact tone. "
-                "5. If the Japanese text contains a question, the Indonesian output must also be a question. "
-                "6. Do not create new sentences that sound unnatural if they are not in the original text. "
-                "7. For long sentences, keep all parts of the meaning. Do not truncate. "
-                "8. If unsure about some text, use [?] for that part. "
-                "9. If the bubble only contains SFX, scribbles, is empty, or is background art and not a meaningful dialogue, reply with 'SKIP'. "
+                "TRANSLATION RULES:\n"
+                "1. Translate literally and accurately. Do not make it overly polite, do not summarize, and do not invent content. \n"
+                "2. Do not add subjects or objects not present in the original text. \n"
+                "3. Do not alter the relationships between characters. \n"
+                "4. If the text is rude, explicit, teasing, degrading, bashful, or begging, maintain that exact tone. \n"
+                f"5. If the text contains a question, the {target_language} output must also be a question. \n"
+                "6. Do not create new sentences that sound unnatural if they are not in the original text. \n"
+                "7. For long sentences, keep all parts of the meaning. Do not truncate. \n"
+                "8. If unsure about some text, use [?] for that part. \n"
+                "9. If the bubble only contains SFX, scribbles, is empty, or is background art and not a meaningful dialogue, reply with 'SKIP'. \n\n"
 
-                "OUTPUT FORMAT: "
-                "Provide the response ONLY in valid JSON without markdown formatting. "
-                "Keys must be the red ID numbers as strings. "
-                "Values must be the Indonesian translation. "
-                'Example output: {"1": "Cepat bangun!", "2": "SKIP", "3": "Ibu... tunggu..."}'
+                "OUTPUT FORMAT:\n"
+                "Provide the response ONLY in valid JSON without markdown formatting. \n"
+                "Keys must be the red ID numbers as strings. \n"
+                f"Values must be the {target_language} translation. \n"
+                f'Example output: {{"1": "{example_val_1}", "2": "SKIP", "3": "{example_val_3}"}}'
             )
 
             response = panggil_gemini_dengan_config(client, gambar_mosaik_pil, prompt)
@@ -130,9 +140,19 @@ def perkecil_daftar_potongan_jika_mosaik_terlalu_tinggi(
     return daftar_baru
 
 
-def proses_satu_gambar(image_path, yolo_model):
+def proses_satu_gambar(image_path, yolo_model, target_language="Indonesian"):
     """Processes a single manga page~ ♪"""
     print(f"\nTranslating: {os.path.basename(image_path)}")
+
+    lang_codes = {
+        "english": "en",
+        "indonesian": "id",
+        "spanish": "es",
+        "portuguese": "pt",
+        "javanese": "jv"
+    }
+    lang_code = lang_codes.get(target_language.lower(), "tr")
+    suffix = f"_cypytr_{lang_code}"
 
     img = cv2.imread(image_path)
 
@@ -228,7 +248,7 @@ def proses_satu_gambar(image_path, yolo_model):
     if total_balon == 0:
         print("  No text bubbles found~")
 
-        output_path = image_path.rsplit(".", 1)[0] + "_translated.png"
+        output_path = image_path.rsplit(".", 1)[0] + f"{suffix}.png"
         img_pil_utama.save(output_path)
 
         return output_path
@@ -298,7 +318,7 @@ def proses_satu_gambar(image_path, yolo_model):
 
     print("  Translating text...")
 
-    hasil_terjemahan = terjemahkan_mosaik(kanvas_mosaik)
+    hasil_terjemahan = terjemahkan_mosaik(kanvas_mosaik, target_language=target_language)
 
     if not hasil_terjemahan:
         print("  [!] Translation failed.")
@@ -378,16 +398,26 @@ def proses_satu_gambar(image_path, yolo_model):
 
     time.sleep(3)
 
-    output_path = image_path.rsplit(".", 1)[0] + "_translated.png"
+    output_path = image_path.rsplit(".", 1)[0] + f"{suffix}.png"
 
     img_pil_utama.save(output_path)
 
     return output_path
 
 
-def mulai_ritual_pdf(pdf_path, yolo_model):
+def mulai_ritual_pdf(pdf_path, yolo_model, target_language="Indonesian"):
     """Processes a PDF page-by-page, and binds them back together~ ♪"""
     print(f"\nProcessing PDF: {os.path.basename(pdf_path)}")
+
+    lang_codes = {
+        "english": "en",
+        "indonesian": "id",
+        "spanish": "es",
+        "portuguese": "pt",
+        "javanese": "jv"
+    }
+    lang_code = lang_codes.get(target_language.lower(), "tr")
+    suffix = f"_cypytr_{lang_code}"
 
     doc = fitz.open(pdf_path)
 
@@ -408,7 +438,7 @@ def mulai_ritual_pdf(pdf_path, yolo_model):
 
         pix.save(img_path)
 
-        hasil_path = proses_satu_gambar(img_path, yolo_model)
+        hasil_path = proses_satu_gambar(img_path, yolo_model, target_language=target_language)
 
         if hasil_path:
             translated_images_paths.append(hasil_path)
@@ -421,7 +451,7 @@ def mulai_ritual_pdf(pdf_path, yolo_model):
             for img in translated_images_paths
         ]
 
-        output_pdf_path = pdf_path.rsplit(".", 1)[0] + "_translated.pdf"
+        output_pdf_path = pdf_path.rsplit(".", 1)[0] + f"{suffix}.pdf"
 
         images[0].save(
             output_pdf_path,

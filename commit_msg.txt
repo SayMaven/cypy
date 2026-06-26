@@ -1,0 +1,6 @@
+feat: add multi-language targets and dynamic switching, bump to v0.2503
+
+- Implement target language selection menu (EN, ID, ES, PT, JV) with clean Unicode box.
+- Add dynamic language switching command (`lang`/`switch`) during the active loop.
+- Introduce custom branded output file suffix (`_cypytr_{code}`).
+- Bump package version to v0.2503.

@@ -5,12 +5,41 @@ from cypy.core.translator import proses_satu_gambar, mulai_ritual_pdf
 from cypy.core.utils import create_shortcut_if_first_run
 
 
+def pilih_bahasa():
+    print("\n┌─────────────────────────────────────────┐")
+    print("│  Target Language / Bahasa Target:       │")
+    print("│                                         │")
+    print("│  [1] English                            │")
+    print("│  [2] Indonesian                         │")
+    print("│  [3] Spanish (Español)                  │")
+    print("│  [4] Portuguese (Português)             │")
+    print("│  [5] Javanese (Basa Jawa)               │")
+    print("└─────────────────────────────────────────┘")
+    
+    lang_choice = input("Select choice / Pilih (1-5) [Default: 2]: ").strip()
+    if lang_choice == "1":
+        target_language = "English"
+    elif lang_choice == "2":
+        target_language = "Indonesian"
+    elif lang_choice == "3":
+        target_language = "Spanish"
+    elif lang_choice == "4":
+        target_language = "Portuguese"
+    elif lang_choice == "5":
+        target_language = "Javanese"
+    else:
+        target_language = "Indonesian"
+        
+    print(f"\n[+] Target language set to: {target_language}")
+    return target_language
+
+
 def main():
     # Automatically create desktop shortcut on first run (Windows only)
     create_shortcut_if_first_run()
 
-    print("CYPY - Manga Translator")
-    print("Ready to translate~ (✿◠‿◠)")
+    print("CYPY v0.2503 - Manga Translator")
+    print("Ready to translate~ (◠‿●) ~♪")
 
     # Check and request API Key if missing or empty
     import cypy.core.config as config
@@ -54,24 +83,31 @@ def main():
 
     yolo_model = YOLO(MODEL_YOLO)
 
+    target_language = pilih_bahasa()
+    print("Ready! You can now drag-and-drop multiple files to translate them.")
+
     while True:
         try:
-            raw_input = input("\nDrag-and-drop image/PDF here (or 'stop'): ")
+            raw_input = input("\nDrag-and-drop image/PDF here (or 'lang', 'stop'): ")
             input_file = raw_input.strip("\"'& ")
 
             if input_file.lower() == "stop":
                 print("Goodbye~ ♪")
                 break
 
+            if input_file.lower() in ("lang", "switch", "change"):
+                target_language = pilih_bahasa()
+                continue
+
             if not input_file:
                 continue
 
             if os.path.exists(input_file):
                 if input_file.lower().endswith(".pdf"):
-                    mulai_ritual_pdf(input_file, yolo_model)
+                    mulai_ritual_pdf(input_file, yolo_model, target_language=target_language)
 
                 elif input_file.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                    hasil = proses_satu_gambar(input_file, yolo_model)
+                    hasil = proses_satu_gambar(input_file, yolo_model, target_language=target_language)
 
                     if hasil:
                         print(f"Done! Saved at: {hasil}")
