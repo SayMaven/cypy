@@ -596,17 +596,32 @@ def setup_rarfile():
     if rarfile is None:
         return False
     import shutil
+    import platform
     if shutil.which('unrar') or shutil.which('unrar.exe'):
         return True
     
-    common_paths = [
-        r"C:\Program Files\WinRAR\UnRAR.exe",
-        r"C:\Program Files\WinRAR\WinRAR.exe",
-        r"C:\Program Files (x86)\WinRAR\UnRAR.exe",
-        r"C:\Program Files (x86)\WinRAR\WinRAR.exe",
-        r"C:\Program Files\7-Zip\7z.exe",
-        r"C:\Program Files (x86)\7-Zip\7z.exe",
-    ]
+    os_name = platform.system()
+    
+    if os_name == "Windows":  # Windows
+        common_paths = [
+            r"C:\Program Files\WinRAR\UnRAR.exe",
+            r"C:\Program Files\WinRAR\WinRAR.exe",
+            r"C:\Program Files (x86)\WinRAR\UnRAR.exe",
+            r"C:\Program Files (x86)\WinRAR\WinRAR.exe",
+            r"C:\Program Files\7-Zip\7z.exe",
+            r"C:\Program Files (x86)\7-Zip\7z.exe",
+        ]
+    elif os_name == "Darwin":  # macOS
+        common_paths = [
+            "/usr/local/bin/unrar",
+            "/opt/homebrew/bin/unrar"
+        ]
+    else:  # Linux
+        common_paths = [
+            "/usr/bin/unrar",
+            "/usr/local/bin/unrar"
+        ]
+
     for p in common_paths:
         if os.path.exists(p):
             rarfile.UNRAR_TOOL = p
