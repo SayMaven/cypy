@@ -15,13 +15,7 @@ except ImportError:
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from ultralytics import YOLO
 
-from cypy.core.config import (
-    MODEL_YOLO, FONT_MANGA, ROOT_DIR, LANG_CODES,
-    MAX_TINGGI_MOSAIK, PAD_X_RATIO, PAD_Y_RATIO, MIN_PAD, SKALA_POTONGAN_MOSAIK,
-    MARGIN_KIRI_NOMOR, MARGIN_KANAN, JARAK_ANTAR_POTONGAN, LEBAR_MOSAIK_MIN,
-    PAKAI_PATCH_UNTUK_BOX_GEPENG, RASIO_BOX_GEPENG, LEBAR_BOX_GEPENG_RATIO, TINGGI_BOX_GEPENG_RATIO,
-    MANUAL_TRANSLATION_OVERRIDE, SUPPORTED_IMAGE_EXTENSIONS
-)
+import cypy.core.config as config
 from cypy.core.utils import (
     bersihkan_json_dari_gemini,
     buang_kotak_raksasa_palsu,
@@ -214,7 +208,7 @@ def proses_satu_gambar(image_path, yolo_model, provider, target_language="Indone
             
             combined = cv2.hconcat(img_results)
             
-            lang_code = LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
+            lang_code = config.LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
             suffix = f"_cypytr_{lang_code}"
             output_path = image_path.rsplit(".", 1)[0] + f"{suffix}.png"
             
@@ -237,7 +231,7 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
 
     print(f"\nTranslating: {os.path.basename(image_path)}")
 
-    lang_code = LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
+    lang_code = config.LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
     suffix = f"_cypytr_{lang_code}"
 
     img = cv2.imread(image_path)
@@ -288,8 +282,8 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
         box_w = max(1, x2 - x1)
         box_h = max(1, y2 - y1)
 
-        pad_x = max(MIN_PAD, int(box_w * PAD_X_RATIO))
-        pad_y = max(MIN_PAD, int(box_h * PAD_Y_RATIO))
+        pad_x = max(config.MIN_PAD, int(box_w * config.PAD_X_RATIO))
+        pad_y = max(config.MIN_PAD, int(box_h * config.PAD_Y_RATIO))
 
         crop_x1, crop_y1, crop_x2, crop_y2 = buat_crop_lega_tapi_tidak_nyamber(
             [x1, y1, x2, y2],
@@ -317,10 +311,10 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
 
         potongan_pil = Image.fromarray(cv2.cvtColor(potongan, cv2.COLOR_BGR2RGB))
 
-        if SKALA_POTONGAN_MOSAIK != 1:
+        if config.SKALA_POTONGAN_MOSAIK != 1:
             ukuran_baru = (
-                max(1, int(potongan_pil.width * SKALA_POTONGAN_MOSAIK)),
-                max(1, int(potongan_pil.height * SKALA_POTONGAN_MOSAIK))
+                max(1, int(potongan_pil.width * config.SKALA_POTONGAN_MOSAIK)),
+                max(1, int(potongan_pil.height * config.SKALA_POTONGAN_MOSAIK))
             )
 
             potongan_pil = potongan_pil.resize(
@@ -343,19 +337,19 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
 
     print(f"  Found {total_balon} speech bubbles...")
 
-    margin_kiri_nomor = MARGIN_KIRI_NOMOR
-    margin_kanan = MARGIN_KANAN
-    jarak_antar_potongan = JARAK_ANTAR_POTONGAN
+    margin_kiri_nomor = config.MARGIN_KIRI_NOMOR
+    margin_kanan = config.MARGIN_KANAN
+    jarak_antar_potongan = config.JARAK_ANTAR_POTONGAN
 
     daftar_potongan = perkecil_daftar_potongan_jika_mosaik_terlalu_tinggi(
         daftar_potongan,
-        max_tinggi_mosaik=MAX_TINGGI_MOSAIK,
+        max_tinggi_mosaik=config.MAX_TINGGI_MOSAIK,
         jarak_antar_potongan=jarak_antar_potongan,
         padding_atas_bawah=20
     )
 
     lebar_mosaik = max(
-        LEBAR_MOSAIK_MIN,
+        config.LEBAR_MOSAIK_MIN,
         max([p.width for _, p in daftar_potongan]) + margin_kiri_nomor + margin_kanan
     )
 
@@ -378,7 +372,7 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
     font_nomor = ImageFont.load_default()
 
     try:
-        font_nomor = ImageFont.truetype(FONT_MANGA, 40)
+        font_nomor = ImageFont.truetype(config.FONT_MANGA, 40)
     except Exception:
         pass
 
@@ -394,7 +388,7 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
 
         y_offset += pot.height + jarak_antar_potongan
 
-    temp_mosaik_dir = os.path.join(ROOT_DIR, "cypy_cache")
+    temp_mosaik_dir = os.path.join(config.ROOT_DIR, "cypy_cache")
     os.makedirs(temp_mosaik_dir, exist_ok=True)
 
     mosaik_path = os.path.join(
@@ -412,8 +406,8 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
         print("  [!] Translation failed.")
         return None
 
-    if MANUAL_TRANSLATION_OVERRIDE:
-        hasil_terjemahan.update(MANUAL_TRANSLATION_OVERRIDE)
+    if config.MANUAL_TRANSLATION_OVERRIDE:
+        hasil_terjemahan.update(config.MANUAL_TRANSLATION_OVERRIDE)
 
     for nomor, teks in hasil_terjemahan.items():
         if nomor in koordinat_jejak:
@@ -432,12 +426,12 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
                     continue
 
                 box_gepeng_mencurigakan = (
-                    rasio >= RASIO_BOX_GEPENG
-                    and w >= lebar_img * LEBAR_BOX_GEPENG_RATIO
-                    and h <= tinggi_img * TINGGI_BOX_GEPENG_RATIO
+                    rasio >= config.RASIO_BOX_GEPENG
+                    and w >= lebar_img * config.LEBAR_BOX_GEPENG_RATIO
+                    and h <= tinggi_img * config.TINGGI_BOX_GEPENG_RATIO
                 )
 
-                if PAKAI_PATCH_UNTUK_BOX_GEPENG and box_gepeng_mencurigakan:
+                if config.PAKAI_PATCH_UNTUK_BOX_GEPENG and box_gepeng_mencurigakan:
                     tulis_teks_di_balon(
                         draw_utama,
                         teks,
@@ -450,8 +444,8 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
                     )
 
                 else:
-                    margin_x = int((x2 - x1) * 0.12)
-                    margin_y = int((y2 - y1) * 0.12)
+                    margin_x = int((x2 - x1) * config.MASK_MARGIN_RATIO)
+                    margin_y = int((y2 - y1) * config.MASK_MARGIN_RATIO)
 
                     overlay = Image.new(
                         "RGBA",
@@ -495,7 +489,7 @@ def _proses_satu_gambar_core(image_path, yolo_model, provider, target_language="
 
 def proses_folder(folder_path, yolo_model, provider, target_language="Indonesian"):
     """Processes all supported images in a folder in parallel."""
-    supported = SUPPORTED_IMAGE_EXTENSIONS
+    supported = config.SUPPORTED_IMAGE_EXTENSIONS
     files = sorted([
         f for f in os.listdir(folder_path)
         if f.lower().endswith(supported)
@@ -515,7 +509,7 @@ def proses_folder(folder_path, yolo_model, provider, target_language="Indonesian
         file_path = os.path.join(folder_path, filename)
         
         # Resume Check
-        lang_code = LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
+        lang_code = config.LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
         suffix = f"_cypytr_{lang_code}"
         expected_output = file_path.rsplit(".", 1)[0] + f"{suffix}.png"
         
@@ -542,12 +536,12 @@ def mulai_ritual_pdf(pdf_path, yolo_model, provider, target_language="Indonesian
     """Processes a PDF page-by-page concurrently, and binds them back together."""
     print(f"\nProcessing PDF: {os.path.basename(pdf_path)}")
 
-    lang_code = LANG_CODES.get(target_language.lower(), "tr")
+    lang_code = config.LANG_CODES.get(target_language.lower(), "tr")
     suffix = f"_cypytr_{lang_code}"
 
     doc = fitz.open(pdf_path)
 
-    temp_dir = os.path.join(ROOT_DIR, "cypy_cache", f"pdf_temp_{uuid.uuid4().hex[:8]}")
+    temp_dir = os.path.join(config.ROOT_DIR, "cypy_cache", f"pdf_temp_{uuid.uuid4().hex[:8]}")
     os.makedirs(temp_dir, exist_ok=True)
 
     translated_images_paths = [None] * len(doc)
@@ -642,7 +636,7 @@ def mulai_ritual_archive(archive_path, yolo_model, provider, target_language="In
     if is_rar:
         print("[Info] Archive detected. Output will be saved as .pdf")
 
-    temp_dir = os.path.join(ROOT_DIR, "cypy_cache", f"archive_temp_{uuid.uuid4().hex[:8]}")
+    temp_dir = os.path.join(config.ROOT_DIR, "cypy_cache", f"archive_temp_{uuid.uuid4().hex[:8]}")
     os.makedirs(temp_dir, exist_ok=True)
     
     print("Extracting archive...")
@@ -662,7 +656,7 @@ def mulai_ritual_archive(archive_path, yolo_model, provider, target_language="In
     image_paths = []
     for root, _, files in os.walk(temp_dir):
         for f in files:
-            if f.lower().endswith(SUPPORTED_IMAGE_EXTENSIONS):
+            if f.lower().endswith(config.SUPPORTED_IMAGE_EXTENSIONS):
                 image_paths.append(os.path.join(root, f))
                 
     image_paths.sort()
@@ -675,7 +669,7 @@ def mulai_ritual_archive(archive_path, yolo_model, provider, target_language="In
         
     print(f"Found {total} images. Starting translation...")
     
-    lang_code = LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
+    lang_code = config.LANG_CODES.get(target_language.lower(), target_language[:2].lower() if target_language else "tr")
     suffix = f"_cypytr_{lang_code}"
     
     translated_paths = []

@@ -10,21 +10,17 @@ try:
 except ImportError:
     _requests = None
 
-from cypy.core.config import (
-    FONT_MANGA, OVERLAP_BATAS_CROP, MASK_AREA_LUAR_BOX, MASK_MARGIN,
-    FILTER_SFX_AKTIF, FILTER_SFX_MODE, SIMPAN_DEBUG_FILTER_SFX,
-    ROOT_DIR, ASSETS_DIR
-)
+import cypy.core.config as config
 
 # ==========================================
 # ✦ FONT MANAGEMENT - Smart font selection & auto-download~ ♪ ✦
 # ==========================================
 
 # Path to the bundled Japanese font
-FONT_JAPANESE = os.path.join(ASSETS_DIR, "KosugiMaru.ttf")
+FONT_JAPANESE = os.path.join(config.ASSETS_DIR, "KosugiMaru.ttf")
 
 # Directory to cache downloaded fonts
-FONT_CACHE_DIR = os.path.join(ROOT_DIR, "cypy_cache", "fonts")
+FONT_CACHE_DIR = os.path.join(config.ROOT_DIR, "cypy_cache", "fonts")
 
 # The currently active target language (set by app.py before translation)
 _active_target_language = None
@@ -268,7 +264,7 @@ def _get_font_for_text(text, size, language=None):
                 pass
 
     try:
-        return ImageFont.truetype(FONT_MANGA, size)
+        return ImageFont.truetype(config.FONT_MANGA, size)
     except Exception:
         return ImageFont.load_default()
 
@@ -796,10 +792,10 @@ def buang_kotak_ngawur(boxes, lebar_img, tinggi_img):
 
 def simpan_debug_crop_filter(image_name, crop, box, alasan):
     """Saves discarded crops so you can inspect them manually if you wish~ ♪"""
-    if not SIMPAN_DEBUG_FILTER_SFX:
+    if not config.SIMPAN_DEBUG_FILTER_SFX:
         return
 
-    debug_dir = os.path.join(ROOT_DIR, "cypy_cache", "debug_filter_sfx")
+    debug_dir = os.path.join(config.ROOT_DIR, "cypy_cache", "debug_filter_sfx")
     os.makedirs(debug_dir, exist_ok=True)
 
     safe_name = os.path.basename(image_name).replace(".", "_")
@@ -822,7 +818,7 @@ def buang_kotak_sfx_dan_gambar(img, boxes, image_name="image"):
     - Dominant white boxes are kept.
     - Discards large boxes with dense edges and black lines~
     """
-    if not FILTER_SFX_AKTIF:
+    if not config.FILTER_SFX_AKTIF:
         return boxes
 
     hasil = []
@@ -830,11 +826,11 @@ def buang_kotak_sfx_dan_gambar(img, boxes, image_name="image"):
     tinggi_img, lebar_img = img.shape[:2]
     luas_img = max(1, tinggi_img * lebar_img)
 
-    if FILTER_SFX_MODE == "longgar":
+    if config.FILTER_SFX_MODE == "longgar":
         black_thr = 0.20
         edge_thr = 0.14
         white_safe = 0.58
-    elif FILTER_SFX_MODE == "ketat":
+    elif config.FILTER_SFX_MODE == "ketat":
         black_thr = 0.13
         edge_thr = 0.09
         white_safe = 0.68
@@ -947,7 +943,7 @@ def buat_crop_lega_tapi_tidak_nyamber(box, semua_box, lebar_img, tinggi_img, pad
         overlap_x = _overlap_1d(x1, x2, ox1, ox2) / float(min(box_w, other_w))
         overlap_y = _overlap_1d(y1, y2, oy1, oy2) / float(min(box_h, other_h))
 
-        if overlap_x >= OVERLAP_BATAS_CROP:
+        if overlap_x >= config.OVERLAP_BATAS_CROP:
             if oy1 >= y2:
                 batas = (y2 + oy1) // 2
                 crop_y2 = min(crop_y2, max(y2, batas))
@@ -956,7 +952,7 @@ def buat_crop_lega_tapi_tidak_nyamber(box, semua_box, lebar_img, tinggi_img, pad
                 batas = (oy2 + y1) // 2
                 crop_y1 = max(crop_y1, min(y1, batas))
 
-        if overlap_y >= OVERLAP_BATAS_CROP:
+        if overlap_y >= config.OVERLAP_BATAS_CROP:
             if ox1 >= x2:
                 batas = (x2 + ox1) // 2
                 crop_x2 = min(crop_x2, max(x2, batas))
@@ -973,7 +969,7 @@ def mask_luar_box_utama(potongan, crop_x1, crop_y1, x1, y1, x2, y2):
     Masks the area outside the YOLO box with white. 
     Keeps external text from confusing Gemini~ ♪
     """
-    if not MASK_AREA_LUAR_BOX:
+    if not config.MASK_AREA_LUAR_BOX:
         return potongan
 
     local_x1 = x1 - crop_x1
@@ -981,10 +977,10 @@ def mask_luar_box_utama(potongan, crop_x1, crop_y1, x1, y1, x2, y2):
     local_x2 = x2 - crop_x1
     local_y2 = y2 - crop_y1
 
-    mask_x1 = max(0, local_x1 - MASK_MARGIN)
-    mask_y1 = max(0, local_y1 - MASK_MARGIN)
-    mask_x2 = min(potongan.shape[1], local_x2 + MASK_MARGIN)
-    mask_y2 = min(potongan.shape[0], local_y2 + MASK_MARGIN)
+    mask_x1 = max(0, local_x1 - config.MASK_MARGIN)
+    mask_y1 = max(0, local_y1 - config.MASK_MARGIN)
+    mask_x2 = min(potongan.shape[1], local_x2 + config.MASK_MARGIN)
+    mask_y2 = min(potongan.shape[0], local_y2 + config.MASK_MARGIN)
 
     potongan_masked = 255 * np.ones_like(potongan)
     potongan_masked[mask_y1:mask_y2, mask_x1:mask_x2] = potongan[mask_y1:mask_y2, mask_x1:mask_x2]
