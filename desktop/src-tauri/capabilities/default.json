@@ -1,0 +1,31 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "shell:default",
+    "dialog:default",
+    "fs:default",
+    {
+      "identifier": "fs:allow-read",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [{ "name": "cypy_engine", "sidecar": true }]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [{ "name": "cypy_engine", "sidecar": true }]
+    },
+    {
+      "identifier": "shell:allow-stdin-write",
+      "allow": [{ "name": "cypy_engine", "sidecar": true }]
+    }
+  ]
+}
