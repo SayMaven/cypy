@@ -189,7 +189,7 @@ def process_command(line):
             global yolo_model
             if yolo_model is None:
                 send_rpc({"type": "progress", "message": "Memuat model YOLOv8 ONNX..."})
-                model_path = os.path.join(get_workspace_root(), "cypy", "models", "comic-text-detector.onnx")
+                model_path = os.path.join(get_workspace_root(), "assets", "eyecyre.onnx")
                 try:
                     yolo_model = YOLOONNX(model_path)
                 except Exception as e:
