@@ -26,6 +26,13 @@ def get_workspace_root():
     else:
         return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+def get_model_path(filename):
+    """Find a model file next to the executable (dev + release), falling back to assets/."""
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), "data", filename)
+    else:
+        return os.path.join(get_workspace_root(), "assets", filename)
+
 # Redirect stdout to avoid breaking JSON-RPC
 real_stdout = sys.stdout
 class JSONRPCWriter:
@@ -189,7 +196,7 @@ def process_command(line):
             global yolo_model
             if yolo_model is None:
                 send_rpc({"type": "progress", "message": "Memuat model YOLOv8 ONNX..."})
-                model_path = os.path.join(get_workspace_root(), "assets", "eyecyre.onnx")
+                model_path = get_model_path("eyecyre.onnx")
                 try:
                     yolo_model = YOLOONNX(model_path)
                 except Exception as e:
