@@ -16,11 +16,14 @@ import cypy.core.config as config
 # ✦ FONT MANAGEMENT - Smart font selection & auto-download~ ♪ ✦
 # ==========================================
 
-# Path to the bundled Japanese font
+# Path to the bundled Japanese font (follows ASSETS_DIR which points to data/ in frozen mode)
 FONT_JAPANESE = os.path.join(config.ASSETS_DIR, "KosugiMaru.ttf")
 
 # Directory to cache downloaded fonts
-FONT_CACHE_DIR = os.path.join(config.ROOT_DIR, "cypy_cache", "fonts")
+if getattr(sys, 'frozen', False):
+    FONT_CACHE_DIR = os.path.join(os.path.dirname(sys.executable), "data", "fonts")
+else:
+    FONT_CACHE_DIR = os.path.join(config.ROOT_DIR, "cypy_cache", "fonts")
 
 # The currently active target language (set by app.py before translation)
 _active_target_language = None
@@ -233,8 +236,8 @@ def _get_font_for_text(text, size, language=None):
         if lang == "japanese" and os.path.exists(FONT_JAPANESE):
             try:
                 return ImageFont.truetype(FONT_JAPANESE, size)
-            except Exception:
-                pass
+            except Exception as e:
+                import sys; print(f"[!] FONT_JAPANESE error: {e}", file=sys.stderr)
 
         # Check cache first
         cache_key = f"lang_{lang}"
@@ -243,8 +246,8 @@ def _get_font_for_text(text, size, language=None):
             if cached:
                 try:
                     return ImageFont.truetype(cached, size)
-                except Exception:
-                    pass
+                except Exception as e:
+                    import sys; print(f"[!] Cached font error: {e}", file=sys.stderr)
 
         # Try downloading Noto Sans for this language
         if lang:
@@ -253,19 +256,20 @@ def _get_font_for_text(text, size, language=None):
             if noto_path:
                 try:
                     return ImageFont.truetype(noto_path, size)
-                except Exception:
-                    pass
+                except Exception as e:
+                    import sys; print(f"[!] Downloaded font error: {e}", file=sys.stderr)
 
         # Last resort: try KosugiMaru (covers CJK well)
         if os.path.exists(FONT_JAPANESE):
             try:
                 return ImageFont.truetype(FONT_JAPANESE, size)
-            except Exception:
-                pass
+            except Exception as e:
+                import sys; print(f"[!] Fallback FONT_JAPANESE error: {e}", file=sys.stderr)
 
     try:
         return ImageFont.truetype(config.FONT_MANGA, size)
-    except Exception:
+    except Exception as e:
+        import sys; print(f"[!] FONT_MANGA error: {e} | Path: {config.FONT_MANGA}", file=sys.stderr)
         return ImageFont.load_default()
 
 

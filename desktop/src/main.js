@@ -160,7 +160,7 @@ async function openDialog() {
       const selected = await window.__TAURI__.core.invoke('plugin:dialog|open', {
         options: {
           multiple: true,
-          filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+          filters: [{ name: 'Supported Files', extensions: ['png', 'jpg', 'jpeg', 'webp', 'cbz', 'cbr', 'pdf', 'zip', 'rar'] }]
         }
       });
       if (selected) {
@@ -180,24 +180,40 @@ if (changeImageBtn) {
   changeImageBtn.addEventListener('click', openDialog);
 }
 
+// Native Tauri Drag and Drop
+if (window.__TAURI__?.event?.listen) {
+  window.__TAURI__.event.listen('tauri://drop', (event) => {
+    if (event.payload && event.payload.paths) {
+      handleTauriFiles(event.payload.paths);
+    }
+  });
+}
+
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
-  // For web API drop, we can't easily get absolute paths. Warn user.
-  alert("Drag and drop from browser is limited. Please use the Browse click instead.");
+  // HTML5 drop fallback
+  if (e.dataTransfer && e.dataTransfer.files.length > 0 && !window.__TAURI__) {
+      alert("Please use the desktop app version for drag and drop to work properly.");
+  }
 });
 
+let translatedPaths = {};
+
+// ... (in handleTauriFiles function)
 function handleTauriFiles(paths) {
   if (paths.length === 0) return;
   
   filesToProcess = paths;
   currentProcessIndex = 0;
+  translatedPaths = {};
   
   dropZone.classList.add('hidden');
   previewSingle.classList.remove('hidden');
   translateBtn.disabled = false;
+// ...
   
   if (paths.length > 1) {
     // Batch Mode
@@ -208,10 +224,28 @@ function handleTauriFiles(paths) {
       const img = document.createElement('img');
       img.className = 'thumb' + (idx === 0 ? ' active' : '');
       img.id = `thumb-${idx}`;
+      img.title = path.split(/[\/\\]/).pop(); // show filename on hover
+      
+      img.addEventListener('click', () => {
+        document.querySelectorAll('.thumb').forEach(el => el.classList.remove('active'));
+        img.classList.add('active');
+        setPreviewImage(idx);
+      });
+      
       try {
-        const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path });
-        const blob = new Blob([new Uint8Array(fileData)]);
-        img.src = URL.createObjectURL(blob);
+        const ext = path.split('.').pop().toLowerCase();
+        const isImage = ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext);
+        
+        if (isImage) {
+          const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path });
+          const blob = new Blob([new Uint8Array(fileData)]);
+          img.src = URL.createObjectURL(blob);
+        } else {
+          // Document icon placeholder
+          img.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline><line x1='16' y1='13' x2='8' y2='13'></line><line x1='16' y1='17' x2='8' y2='17'></line><polyline points='10 9 9 9 8 9'></polyline></svg>";
+          img.style.objectFit = 'contain';
+          img.style.padding = '5px';
+        }
       } catch (e) {
         console.error("Failed to load thumbnail:", e);
       }
@@ -229,20 +263,47 @@ function handleTauriFiles(paths) {
 async function setPreviewImage(index) {
   if (index >= filesToProcess.length) return;
   const path = filesToProcess[index];
+  currentProcessIndex = index;
+  
   try {
-    const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path });
-    const blob = new Blob([new Uint8Array(fileData)]);
-    const url = URL.createObjectURL(blob);
-    imgOriginal.onerror = () => {
-      alert("Image failed to load! URL: " + url);
-      imgOriginal.onerror = null;
-    };
-    imgOriginal.src = url;
+    const ext = path.split('.').pop().toLowerCase();
+    const isImage = ['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext);
+    
+    imgOriginal.onerror = null; // reset handler
+    if (isImage) {
+      const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path });
+      const blob = new Blob([new Uint8Array(fileData)]);
+      const url = URL.createObjectURL(blob);
+      imgOriginal.onerror = () => {
+        alert("Image failed to load! URL: " + url);
+        imgOriginal.onerror = null;
+      };
+      imgOriginal.src = url;
+    } else {
+      // Document icon placeholder
+      imgOriginal.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline><line x1='16' y1='13' x2='8' y2='13'></line><line x1='16' y1='17' x2='8' y2='17'></line><polyline points='10 9 9 9 8 9'></polyline></svg>";
+    }
   } catch (err) {
-    alert("Failed to read image file. Error: " + err + "\nPath: " + path);
+    alert("Failed to read file. Error: " + err + "\nPath: " + path);
   }
-  imgTranslated.src = '';
-  imgTranslated.style.opacity = '0.3';
+  
+  if (translatedPaths[index]) {
+      const outputPath = translatedPaths[index];
+      if (window.__TAURI__?.core?.convertFileSrc) {
+        imgTranslated.src = window.__TAURI__.core.convertFileSrc(outputPath) + '?t=' + Date.now();
+      } else {
+        // Fallback for web mode
+        try {
+            const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path: outputPath });
+            const blob = new Blob([new Uint8Array(fileData)]);
+            imgTranslated.src = URL.createObjectURL(blob);
+        } catch(e) {}
+      }
+      imgTranslated.style.opacity = '1';
+  } else {
+      imgTranslated.src = '';
+      imgTranslated.style.opacity = '0.3';
+  }
 }
 
 // IPC Simulation / Setup
@@ -287,9 +348,18 @@ async function requestConfig() {
           statusText.textContent = "Done!";
           (async () => {
             try {
-              const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path: msg.output_image_path || msg.data?.output_image_path });
-              const blob = new Blob([new Uint8Array(fileData)]);
-              imgTranslated.src = URL.createObjectURL(blob);
+              const outputPath = msg.output_image_path || msg.data?.output_image_path;
+              if (outputPath) {
+                translatedPaths[currentProcessIndex] = outputPath;
+                if (window.__TAURI__?.core?.convertFileSrc) {
+                  imgTranslated.src = window.__TAURI__.core.convertFileSrc(outputPath) + '?t=' + Date.now();
+                } else {
+                  // Fallback: read file bytes
+                  const fileData = await window.__TAURI__.core.invoke('plugin:fs|read_file', { path: outputPath });
+                  const blob = new Blob([new Uint8Array(fileData)]);
+                  imgTranslated.src = URL.createObjectURL(blob);
+                }
+              }
             } catch (e) {
               console.error("Failed to load translated image:", e);
               imgTranslated.src = "";

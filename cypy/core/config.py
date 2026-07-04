@@ -9,7 +9,12 @@ CORE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 if getattr(sys, 'frozen', False):
     ROOT_DIR = os.path.dirname(sys.executable)
-    ASSETS_DIR = os.path.join(getattr(sys, '_MEIPASS', ROOT_DIR), "assets")
+    # In frozen mode, assets (fonts, ONNX model) live in data/ next to the exe
+    _data_dir = os.path.join(ROOT_DIR, "data")
+    if os.path.isdir(_data_dir):
+        ASSETS_DIR = _data_dir
+    else:
+        ASSETS_DIR = os.path.join(getattr(sys, '_MEIPASS', ROOT_DIR), "assets")
 else:
     ROOT_DIR = os.path.abspath(os.path.join(CORE_DIR, "..", ".."))
     ASSETS_DIR = os.path.join(ROOT_DIR, "assets")

@@ -29,19 +29,31 @@ fn main() {
     // --- Copy model data next to the sidecar (inside data/) ---
     let data_src = PathBuf::from("bin").join("data");
     let data_dst = target_dir.join("data");
+    let data_dst_root = PathBuf::from("data"); // Copy to src-tauri/data for tauri dev
+    
     if data_src.exists() {
         if let Err(e) = std::fs::create_dir_all(&data_dst) {
-            eprintln!("cargo:warning=Failed to create data dir: {}", e);
-        } else {
-            for entry in std::fs::read_dir(&data_src).unwrap_or_else(|_| std::fs::read_dir(".").unwrap()) {
-                if let Ok(entry) = entry {
-                    let src_file = entry.path();
-                    let dst_file = data_dst.join(entry.file_name());
-                    if let Err(e) = std::fs::copy(&src_file, &dst_file) {
-                        eprintln!("cargo:warning=Failed to copy data file {:?}: {}", src_file, e);
-                    } else {
-                        println!("cargo:warning=Copied data file to {}", dst_file.display());
-                    }
+            eprintln!("cargo:warning=Failed to create data dir in target: {}", e);
+        }
+        if let Err(e) = std::fs::create_dir_all(&data_dst_root) {
+            eprintln!("cargo:warning=Failed to create data dir in root: {}", e);
+        }
+        
+        for entry in std::fs::read_dir(&data_src).unwrap_or_else(|_| std::fs::read_dir(".").unwrap()) {
+            if let Ok(entry) = entry {
+                let src_file = entry.path();
+                let file_name = entry.file_name();
+                
+                let dst_file_target = data_dst.join(&file_name);
+                if let Err(e) = std::fs::copy(&src_file, &dst_file_target) {
+                    eprintln!("cargo:warning=Failed to copy data file to target: {}", e);
+                }
+                
+                let dst_file_root = data_dst_root.join(&file_name);
+                if let Err(e) = std::fs::copy(&src_file, &dst_file_root) {
+                    eprintln!("cargo:warning=Failed to copy data file to root: {}", e);
+                } else {
+                    println!("cargo:warning=Copied data file to {}", dst_file_root.display());
                 }
             }
         }

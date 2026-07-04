@@ -12,7 +12,7 @@ try:
     import rarfile
 except ImportError:
     rarfile = None
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, JpegImagePlugin, PngImagePlugin, PdfImagePlugin
 from cypy.core.yolo_onnx import YOLOONNX as YOLO
 
 import cypy.core.config as config
@@ -575,6 +575,7 @@ def mulai_ritual_pdf(pdf_path, yolo_model, provider, target_language="Indonesian
             translated_images_paths[p_num] = res_path
 
     valid_paths = [p for p in translated_images_paths if p]
+    output_pdf_path = None
     if valid_paths:
         print("Saving final PDF...")
         images = [Image.open(img).convert("RGB") for img in valid_paths]
@@ -584,7 +585,7 @@ def mulai_ritual_pdf(pdf_path, yolo_model, provider, target_language="Indonesian
 
     # Cleanup
     shutil.rmtree(temp_dir, ignore_errors=True)
-
+    return output_pdf_path
 
 def setup_rarfile():
     if rarfile is None:
@@ -691,6 +692,7 @@ def mulai_ritual_archive(archive_path, yolo_model, provider, target_language="In
             
     # Repack into PDF
     valid_paths = [p for p in translated_paths if p and os.path.exists(p)]
+    output_pdf_path = None
     if valid_paths:
         output_pdf_path = archive_path.rsplit(".", 1)[0] + f"{suffix}.pdf"
         print(f"\nCombining translated images into PDF...")
@@ -699,4 +701,5 @@ def mulai_ritual_archive(archive_path, yolo_model, provider, target_language="In
         print(f"Done! Saved at: {output_pdf_path}")
                 
     shutil.rmtree(temp_dir, ignore_errors=True)
+    return output_pdf_path
 
