@@ -179,6 +179,13 @@ VSVersionInfo(
     if collect_dnd:
         cmd.append("--collect-all=tkinterdnd2")
 
+    standard_excludes = [
+        "scipy", "matplotlib", "IPython", "notebook",
+        "unittest", "doctest", "pydoc", "pdb"
+    ]
+    for ex in standard_excludes:
+        cmd.append(f"--exclude-module={ex}")
+
     if extra_excludes:
         for ex in extra_excludes:
             cmd.append(f"--exclude-module={ex}")
@@ -360,6 +367,19 @@ def package_gui_release():
     ffmpeg_dll = internal_dir / "cv2" / "opencv_videoio_ffmpeg4100_64.dll"
     if ffmpeg_dll.is_file():
         try: ffmpeg_dll.unlink()
+        except Exception: pass
+
+    # Prune heavy unused OpenCV binaries (GAPI / data)
+    for cv2_extra in ["gapi", "data"]:
+        cv2_dir = internal_dir / "cv2" / cv2_extra
+        if cv2_dir.is_dir():
+            try: shutil.rmtree(cv2_dir, ignore_errors=True)
+            except Exception: pass
+
+    # Prune heavy unused Tcl timezone data
+    tcl_tz = internal_dir / "tcl" / "tzdata"
+    if tcl_tz.is_dir():
+        try: shutil.rmtree(tcl_tz, ignore_errors=True)
         except Exception: pass
 
     for unused_asset in ["before.jpg", "after.png"]:
