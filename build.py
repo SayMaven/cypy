@@ -331,38 +331,91 @@ def package_gui_release():
     arch = normalize_arch(platform.machine())
     os_name = "macos" if os_system == "darwin" else os_system
 
-    zip_name = f"{APP_NAME}-{APP_VER}-{os_name}-{arch}-gui.zip"
-    zip_path = RELEASES_DIR / zip_name
-    print(f"[Build] Packaging GUI application for {os_name} ({arch})...")
+    if os_system == "linux":
+        tar_name = f"{APP_NAME}_{APP_VER}_{os_name}_{arch}.tar.gz"
+        tar_path = RELEASES_DIR / tar_name
+        print(f"[Build] Packaging GUI application for {os_name} ({arch}) as .tar.gz...")
 
-    # GUI source dist
-    gui_dist = DIST_DIR / "cypy-gui"
+        bin_dir = app_folder_path / "bin"
+        bin_dir.mkdir(exist_ok=True)
 
-    if not gui_dist.is_dir():
-        print(f"[Build] Error: Compiled GUI folder not found at: {gui_dist}", file=sys.stderr)
-        sys.exit(2)
+        for item in os.listdir(gui_dist):
+            s = gui_dist / item
+            d = bin_dir / item
+            if s.is_dir():
+                shutil.copytree(s, d, symlinks=True)
+            else:
+                shutil.copy2(s, d, follow_symlinks=False)
+        print("[Build] Copied cypy-gui files into bin/ folder.")
 
-    app_folder_path = DIST_DIR / f"{APP_NAME}_pkg_temp"
-    if app_folder_path.is_dir():
-        try: shutil.rmtree(app_folder_path)
-        except Exception as e:
-            print(f"[Build] Warning: Failed to remove old temporary directory: {e}", file=sys.stderr)
-    app_folder_path.mkdir(exist_ok=True)
+        # Create run.sh
+        run_sh = app_folder_path / "run.sh"
+        run_sh.write_text(
+            "#!/bin/bash\n"
+            'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+            'chmod +x "$SCRIPT_DIR/bin/cypy" 2>/dev/null\n'
+            'exec "$SCRIPT_DIR/bin/cypy" "$@"\n',
+            encoding="utf-8"
+        )
+        try: os.chmod(run_sh, 0o755)
+        except Exception: pass
 
-    # Copy files from GUI build
-    for item in os.listdir(gui_dist):
-        s = gui_dist / item
-        d = app_folder_path / item
-        if s.is_dir():
-            shutil.copytree(s, d, symlinks=True)
-        else:
-            shutil.copy2(s, d, follow_symlinks=False)
-    print("[Build] Copied cypy-gui files into release folder.")
+        # Create create-shortcut.sh
+        shortcut_sh = app_folder_path / "create-shortcut.sh"
+        shortcut_sh.write_text(
+            "#!/bin/bash\n"
+            'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+            'DESKTOP_FILE="$HOME/.local/share/applications/cypy.desktop"\n\n'
+            'mkdir -p "$HOME/.local/share/applications"\n\n'
+            'cat << EOF > "$DESKTOP_FILE"\n'
+            '[Desktop Entry]\n'
+            'Type=Application\n'
+            'Name=CYPY Manga Translator\n'
+            'Exec=$SCRIPT_DIR/run.sh\n'
+            'Icon=$SCRIPT_DIR/bin/_internal/assets/favicon.png\n'
+            'Terminal=false\n'
+            'Categories=Utility;Graphics;\n'
+            'EOF\n\n'
+            'chmod +x "$DESKTOP_FILE"\n'
+            'echo "[CYPY] Shortcut created successfully at: $DESKTOP_FILE"\n',
+            encoding="utf-8"
+        )
+        try: os.chmod(shortcut_sh, 0o755)
+        except Exception: pass
 
-    # Remove heavy unused assets to optimize package size
-    internal_dir = app_folder_path / "_internal"
-    if not internal_dir.is_dir():
-        internal_dir = app_folder_path
+        # Create README.txt
+        readme_txt = app_folder_path / "README.txt"
+        readme_txt.write_text(
+            "CYPY Manga Translator - Linux Portable Package\n"
+            "==============================================\n\n"
+            "How to Run:\n"
+            "1. Double-click 'run.sh' or execute in terminal:\n"
+            "   ./run.sh\n\n"
+            "2. (Optional) Create Application Menu Launcher:\n"
+            "   ./create-shortcut.sh\n",
+            encoding="utf-8"
+        )
+
+        internal_dir = bin_dir / "_internal"
+        if not internal_dir.is_dir():
+            internal_dir = bin_dir
+    else:
+        zip_name = f"{APP_NAME}-{APP_VER}-{os_name}-{arch}-gui.zip"
+        zip_path = RELEASES_DIR / zip_name
+        print(f"[Build] Packaging GUI application for {os_name} ({arch})...")
+
+        for item in os.listdir(gui_dist):
+            s = gui_dist / item
+            d = app_folder_path / item
+            if s.is_dir():
+                shutil.copytree(s, d, symlinks=True)
+            else:
+                shutil.copy2(s, d, follow_symlinks=False)
+        print("[Build] Copied cypy-gui files into release folder.")
+
+        internal_dir = app_folder_path / "_internal"
+        if not internal_dir.is_dir():
+            internal_dir = app_folder_path
 
     ffmpeg_dll = internal_dir / "cv2" / "opencv_videoio_ffmpeg4100_64.dll"
     if ffmpeg_dll.is_file():
@@ -415,22 +468,42 @@ def package_gui_release():
             print(f"[Build] Warning: Failed to clean up temporary release folder: {e}", file=sys.stderr)
 
     try:
-        print(f"[Build] Zipping folder: {app_folder_path} to {zip_path}...")
-        created_zip = safe_zip_directory(APP_NAME, app_folder_path, zip_path)
-        created_zip_path = Path(created_zip)
-        if not created_zip_path.is_file():
-            raise FileNotFoundError(f"[Build] Expected archive not found: {created_zip}")
+        if os_system == "linux":
+            print(f"[Build] Packaging folder: {app_folder_path} to {tar_path}...")
+            created_archive = safe_tar_directory(APP_NAME, app_folder_path, tar_path)
+        else:
+            print(f"[Build] Zipping folder: {app_folder_path} to {zip_path}...")
+            created_archive = safe_zip_directory(APP_NAME, app_folder_path, zip_path)
 
-        if RELEASES_DIR not in created_zip_path.parents:
-            created_zip_path = Path(shutil.move(created_zip_path, RELEASES_DIR / created_zip_path.name))
+        created_archive_path = Path(created_archive)
+        if not created_archive_path.is_file():
+            raise FileNotFoundError(f"[Build] Expected archive not found: {created_archive}")
 
-        print(f"[Build] Packaged successfully to: {created_zip_path}")
-        print(f"[Build] Package size: {created_zip_path.stat().st_size / (1024*1024):.2f} MB")
+        if RELEASES_DIR not in created_archive_path.parents:
+            created_archive_path = Path(shutil.move(created_archive_path, RELEASES_DIR / created_archive_path.name))
+
+        print(f"[Build] Packaged successfully to: {created_archive_path}")
+        print(f"[Build] Package size: {created_archive_path.stat().st_size / (1024*1024):.2f} MB")
     except Exception as e:
         print(f"[Build] Packaging failed: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
         cleanup()
+
+def safe_tar_directory(name: str, folder_path: Union[str, Path], tar_path: Union[str, Path]) -> str:
+    import tarfile
+    folder_path = Path(folder_path).resolve()
+    tar_path = Path(tar_path).resolve()
+
+    if not folder_path.is_dir():
+        raise NotADirectoryError(folder_path)
+
+    tar_output = tar_path.with_name(f"{tar_path.name}")
+    root_arcname = f"{name}_{APP_VER}"
+    with tarfile.open(tar_output, "w:gz") as tar:
+        tar.add(folder_path, arcname=root_arcname)
+    print(f"[Build] Created TAR.GZ archive: {tar_output}")
+    return str(tar_output)
 
 def safe_zip_directory(name: str, folder_path: Union[str, Path], zip_path: Union[str, Path]) -> str:
     import zipfile

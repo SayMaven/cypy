@@ -57,6 +57,7 @@ jobs:
           name: build-artifact-${{ matrix.os }}
           path: |
             releases/*.zip
+            releases/*.tar.gz
             releases/*.exe
 
   release:
@@ -74,6 +75,7 @@ jobs:
         run: |
           mkdir -p release-files
           find downloaded-artifacts -name "*.zip" -exec cp {} release-files/ \;
+          find downloaded-artifacts -name "*.tar.gz" -exec cp {} release-files/ \;
           find downloaded-artifacts -name "*.exe" -exec cp {} release-files/ \;
           echo "Files to upload:"
           ls -lh release-files/
