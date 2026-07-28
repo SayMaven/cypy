@@ -1,93 +1,88 @@
 # cypy
 
 <p align="center">
-  <img src="assets/favicon.png" width="128" alt="cypy Logo" />
+  <img src="assets/favicon.png" width="100" alt="cypy Logo" />
 </p>
 
 <p align="center">
   <img src="assets/gui.webp" alt="cypy GUI Screenshot" />
 </p>
 
+**cypy** is an automated manga translation tool. It detects speech bubbles using YOLOv8, translates text via LLM APIs (Gemini, OpenAI, Zen, OpenRouter), cleans background areas, and fits translated typography into comic panels.
+
 ---
 
-**cypy** is a modern manga translator application utilizing YOLOv8 to accurately detect speech bubbles and Google Gemini API / OpenAI API to translate comic panels while keeping original artwork clean and typography well-fitted.
+## Features
 
-The application offers two operation modes:
-- **GUI Mode:** A sleek, pitch-black retro graphical interface featuring Consolas monospace font, pixel-perfect 1px borders, and full **Drag & Drop** support.
-- **CLI Mode:** An interactive command-line interface for fast and efficient translation directly from your terminal.
+- **Multi-Format Support:** Process images (PNG, JPG, WEBP), PDFs, and archives (ZIP, CBZ, RAR, CBR) in exact page sequence.
+- **Drag & Drop:** Drop files or folders directly onto the GUI or terminal window.
+- **Smart Batching & Rate Limiting:** Automatic bubble chunking (max 20 per request), request throttling, and retry handling for vision LLM APIs.
+- **Multiple AI Providers:** Google Gemini, OpenAI, Zen (free), OpenCode Go, OpenRouter, and custom OpenAI-compatible endpoints.
+- **GUI & CLI Modes:** Desktop graphical interface or interactive terminal prompt.
 
-### Translation Example (Before / After)
+---
+
+## Translation Preview
 
 | Original Page (Before) | Translated Page (After) |
 | :---: | :---: |
-| <img src="assets/before.webp" width="380" alt="Original Manga" /> | <img src="assets/after.webp" width="380" alt="Translated Manga" /> |
+| <img src="assets/before.webp" width="380" alt="Original Page" /> | <img src="assets/after.webp" width="380" alt="Translated Page" /> |
 
-### Features
+---
 
-- **Drag & Drop Support (GUI / CLI):** Drag any manga files (Images, PDF, ZIP, CBZ, RAR, CBR) or directories and drop them directly onto the GUI window or terminal prompt to automatically populate the source path.
-- **On-the-Fly Configuration (GUI / CLI):** Switch target languages, LLM models, and AI providers on the fly, or tweak bubble layout padding and font scales dynamically.
-- **Smart Hybrid Storage:**
-  - **Portable Mode:** Saves your configuration to `./data/settings.json` when run from local writable folders.
-  - **Installed Mode:** Automatically redirects settings to `%LOCALAPPDATA%/cypy/settings.json` if run from protected system folders (like `Program Files`) to prevent permission errors and preserve preferences during upgrades.
-- **Multi-Language Translation:** Translate manga to English, Indonesian, Japanese, Mandarin, Spanish, Portuguese, Javanese, Korean, Russian, and Thai.
-- **Multi-Provider AI Engines:** Out-of-the-box support for **Google Gemini**, **OpenAI**, **Zen** (free, no API key required), **OpenCode Go**, **OpenRouter**, and **Custom Provider** (OpenAI-compatible base URL & custom model).
-- **Official Publisher Metadata:** Built Windows executables (`.exe`) are dynamically stamped with publisher properties (**indravoyager**).
+## Quick Start
 
-### Installation & Setup
+### Prerequisites
+- **Python:** 3.8 to 3.11 (Python 3.10 recommended).
 
-#### Prerequisites
-- **Python:** Version `3.8` to `3.11` (Python `3.10` recommended).
+### Installation
 
-#### Step 1: Clone the Repository & Prepare Virtual Environment
 ```bash
-# 1. Clone cypy repository
 git clone https://github.com/indravoyager/cypy.git
 cd cypy
 
-# 2. Create virtual environment
 python -m venv venv
 
-# 3. Activate the virtual environment
-# Windows:
+# Windows
 venv\Scripts\activate
-# Linux / macOS:
+# Linux / macOS
 source venv/bin/activate
-```
 
-#### Step 2: Install Dependencies & Application
-```bash
 pip install -e .
 ```
 
-#### Step 3: Run the Application
-Once installed, you can use the registered shortcut command `cypy` directly from your terminal:
-- **GUI Mode (Recommended / Default):**
-  Running `cypy` without arguments defaults to GUI mode.
-  ```bash
-  cypy
-  ```
-- **CLI Mode (Interactive Terminal):**
-  Use the `--cli` flag to start in terminal mode.
-  ```bash
-  cypy --cli
-  ```
+### Usage
 
-### Interactive CLI Commands
+```bash
+# GUI Mode (Default)
+cypy
 
-When running in **CLI Mode**, you can type these commands directly in the prompt before dropping your files:
+# CLI Mode
+cypy --cli
+```
+
+---
+
+## CLI Commands
+
+When running in **CLI Mode**, type commands directly into the prompt:
 
 | Command | Description |
 | :--- | :--- |
-| `lang` / `switch` | Dynamically select/change the target translation language. |
-| `provider` / `api` | Choose/switch the active LLM provider (Gemini, OpenAI, Zen, etc.). |
-| `model` | Instantly change the active LLM model name. |
-| `status` | Display current API key status and configurations. |
-| `tweak` | Open the layout tweak menu to adjust padding margins, font scales, etc. |
-| `help` | Print list of available commands. |
-| `stop` / `exit` | Exit the application. |
+| `lang` / `switch` | Change target language. |
+| `provider` / `api` | Switch LLM provider. |
+| `model` | Change active model name. |
+| `status` | Display current configuration. |
+| `tweak` | Open layout padding and filter adjustment menu. |
+| `help` | Show command list. |
+| `stop` / `exit` | Exit application. |
 
-### Compiling Standalone Executable (.exe)
-To package `cypy` into a standalone Windows executable (`.exe`) stamped with the **indravoyager** metadata, run:
+---
+
+## Standalone Executable (.exe)
+
+To build a standalone Windows executable:
+
 ```bash
 python build.py
 ```

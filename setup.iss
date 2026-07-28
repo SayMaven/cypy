@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "CYPY Manga Translator"
-#define MyAppVersion "0.25.1.13"
+#define MyAppVersion "1.25.1.13"
 #define MyAppPublisher "indravoyager"
 #define MyAppURL "https://github.com/indravoyager/cypy"
-#define MyAppExeName "cypy-gui.exe"
+#define MyAppExeName "cypy.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -20,7 +20,7 @@ DefaultDirName={localappdata}\Programs\CYPY
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=releases
-OutputBaseFilename=CyPy_win-x64_Setup_v{#MyAppVersion}
+OutputBaseFilename=cypy-v{#MyAppVersion}-windows-x64-setup
 SetupIconFile=assets\favicon.ico
 Compression=lzma2/max
 SolidCompression=yes
@@ -41,7 +41,6 @@ Source: ".env.example"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autoprograms}\{#MyAppName} (CLI)"; Filename: "{app}\cypy-cli.exe"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]

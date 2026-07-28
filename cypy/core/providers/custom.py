@@ -6,7 +6,7 @@ from PIL.Image import Image
 from cypy.core.providers._constants import DEFAULT_HEADERS
 from cypy.core.providers.base import APIKey, LLMProvider
 from cypy.core.config import REQUEST_TIMEOUT
-from cypy.core.utils import image2base64
+from cypy.core.services.image_service import image2base64
 
 class CustomProvider(LLMProvider):
     """
@@ -23,14 +23,10 @@ class CustomProvider(LLMProvider):
         return "Custom"
 
     def validate_api_key(self, /) -> Literal[True]:
-        """Key is optional — some local providers don't need one."""
         return True
 
     @property
     def base_url(self, /) -> str:
-        """
-        The base URL for this provider, or `'[Not set]'` if not set.
-        """
         return self._base_url or "[Not set]"
 
     @base_url.setter
@@ -44,7 +40,6 @@ class CustomProvider(LLMProvider):
         img_b64 = image2base64(image)
         data_uri = f"data:image/png;base64,{img_b64}"
 
-        # Build endpoint URL — append /chat/completions if not already present
         endpoint = self._base_url
         if not endpoint.endswith("/chat/completions"):
             endpoint = endpoint.rstrip("/") + "/v1/chat/completions"

@@ -6,7 +6,7 @@ from PIL.Image import Image
 from cypy.core.providers._constants import DEFAULT_HEADERS
 from cypy.core.providers.base import LLMProvider
 from cypy.core.config import REQUEST_TIMEOUT
-from cypy.core.utils import image2base64
+from cypy.core.services.image_service import image2base64
 
 class OpenCodeGoProvider(LLMProvider):
     """
@@ -21,7 +21,6 @@ class OpenCodeGoProvider(LLMProvider):
         return "OpenCode Go"
 
     def validate_api_key(self, /) -> bool:
-        """OpenCode Go requires an API key."""
         return bool(self.api_key and self.api_key.strip())
 
     def translate_image(self, /, image: Image, prompt: str) -> Optional[str]:

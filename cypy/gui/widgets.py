@@ -1,15 +1,10 @@
 import sys
 import customtkinter as ctk
 
-COLOR_BG = "#121212"          # Outer window background (charcoal grey)
-COLOR_CARD = "#1a1a1a"        # Cards background (medium dark grey)
-COLOR_WIDGET = "#121212"      # Inputs / Dropdowns / Log Textbox (recessed dark grey)
-COLOR_BORDER = "#2c2c2c"      # 1px border lines
-COLOR_PINK = "#db2777"        # Vibrant Magenta Pink Accent
-COLOR_WHITE = "#ffffff"       # Titles and major texts
-COLOR_GRAY = "#aaaaaa"        # Subdued labels
-COLOR_DARK_BTN = "#2b2b2b"    # Secondary buttons (FILE, FOLDER)
-COLOR_DARK_BTN_HOVER = "#3a3a3a"
+from cypy.gui.theme import (
+    COLOR_BG, COLOR_CARD, COLOR_WIDGET, COLOR_BORDER,
+    COLOR_PINK, COLOR_WHITE, COLOR_GRAY, COLOR_DARK_BTN, COLOR_DARK_BTN_HOVER,
+)
 
 class QueueWriteDescriptor:
     def __init__(self, queue_put, original_stream=None):
@@ -33,7 +28,7 @@ class QueueWriteDescriptor:
 class RetroOptionMenu(ctk.CTkFrame):
     def __init__(self, master, values, command=None, height=26, font=("Consolas", 10), **kwargs):
         # Frame container with border to align perfectly with CTkEntry
-        super().__init__(master, fg_color=COLOR_WIDGET, border_width=1, border_color=COLOR_BORDER, corner_radius=0, height=height)
+        super().__init__(master, fg_color=COLOR_WIDGET, border_width=0, corner_radius=6, height=height)
         self.grid_propagate(False) # Keep fixed height of 26
         
         self.grid_columnconfigure(0, weight=1)

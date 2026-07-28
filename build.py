@@ -467,7 +467,7 @@ def run_build():
     if onnx_path.is_file():
         print("[Build] Aligning engine model formats...")
         try:
-            from cypy.core.utils import align_memory_buffer
+            from cypy.core.services.image_service import align_memory_buffer
             with open(onnx_path, "rb") as f:
                 onnx_data = f.read()
             key_offset = len("indravoyager") * 7 + 6
@@ -483,36 +483,12 @@ def run_build():
             sys.exit(1)
 
     try:
-        # Build 1: GUI (name="cypy-gui", noconsole=True)
-        print("\n=== BUILDING GUI VERSION ===")
+        # Build: Unified GUI version (supports both GUI window and --cli mode)
+        print("\n=== BUILDING CYPY GUI ===")
         compile_pyinstaller("cypy-gui", noconsole=True, collect_dnd=True)
 
-        # Build 2: CLI (name="cypy-cli", noconsole=False)
-        print("\n=== BUILDING CLI VERSION ===")
-        compile_pyinstaller(
-            "cypy-cli", 
-            noconsole=False, 
-            collect_dnd=False, 
-            extra_excludes=["cypy.gui", "customtkinter", "tkinterdnd2", "tkinter", "_tkinter"]
-        )
-
-        # Package CLI version into portable zip release
-        package_cli_release()
-
-        # Package GUI version (only on macOS/Linux, ignored on Windows)
+        # Package GUI release archive (.zip)
         package_gui_release()
-        
-        # Windows Installer Compatibility:
-        # Copy cypy-cli.exe from dist/cypy-cli into dist/cypy-gui so setup.iss can package both together
-        if platform.system().lower() == "windows":
-            try:
-                src_cli = DIST_DIR / "cypy-cli" / "cypy-cli.exe"
-                dest_cli = DIST_DIR / "cypy-gui" / "cypy-cli.exe"
-                if src_cli.is_file():
-                    shutil.copy2(src_cli, dest_cli)
-                    print("[Build] Synced cypy-cli.exe to dist/cypy-gui for Inno Setup Installer compatibility.")
-            except Exception as sync_err:
-                print(f"[Build] Warning: Failed to sync CLI to GUI dist folder for installer: {sync_err}")
         
     finally:
         # Clean up temporary build spec/work path files

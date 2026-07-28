@@ -6,7 +6,7 @@ from PIL.Image import Image
 from cypy.core.providers._constants import DEFAULT_HEADERS
 from cypy.core.providers.base import LLMProvider
 from cypy.core.config import REQUEST_TIMEOUT
-from cypy.core.utils import image2base64
+from cypy.core.services.image_service import image2base64
 
 class ZenProvider(LLMProvider):
     """
@@ -32,7 +32,6 @@ class ZenProvider(LLMProvider):
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         else:
-            # Zen provider can accept request even without API key
             headers.pop("Authorization", "")
 
         payload = {

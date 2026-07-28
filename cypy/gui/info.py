@@ -3,13 +3,10 @@ import sys
 import webbrowser
 import customtkinter as ctk
 from cypy.core.version import APP_VER
-
-COLOR_BG = "#121212"
-COLOR_CARD = "#1a1a1a"
-COLOR_WIDGET = "#121212"
-COLOR_BORDER = "#2c2c2c"
-COLOR_PINK = "#db2777"
-COLOR_WHITE = "#ffffff"
+from cypy.gui.theme import (
+    COLOR_BG, COLOR_CARD, COLOR_WIDGET, COLOR_BORDER,
+    COLOR_PINK, COLOR_WHITE,
+)
 
 class InfoDialog(ctk.CTkToplevel):
     def __init__(self, parent):
@@ -103,9 +100,9 @@ class InfoDialog(ctk.CTkToplevel):
         # GitHub Button
         btn_github = ctk.CTkButton(
             btn_frame, text="GitHub Repo",
-            font=("Terminal", 10, "bold"), text_color="#00ff00",
-            fg_color=COLOR_CARD, hover_color=COLOR_WIDGET, border_width=1, border_color=COLOR_BORDER,
-            corner_radius=0, height=28,
+            font=("Consolas", 10, "bold"), text_color="#00ff00",
+            fg_color=COLOR_CARD, hover_color=COLOR_WIDGET, border_width=0,
+            corner_radius=6, height=28,
             command=lambda: webbrowser.open("https://github.com/indravoyager/cypy")
         )
         btn_github.grid(row=0, column=0, padx=(0, 4), sticky="ew")
@@ -113,9 +110,9 @@ class InfoDialog(ctk.CTkToplevel):
         # Trakteer Button
         btn_trakteer = ctk.CTkButton(
             btn_frame, text="Support Dev",
-            font=("Terminal", 10, "bold"), text_color="#e69933",
-            fg_color=COLOR_CARD, hover_color=COLOR_WIDGET, border_width=1, border_color=COLOR_BORDER,
-            corner_radius=0, height=28,
+            font=("Consolas", 10, "bold"), text_color="#e69933",
+            fg_color=COLOR_CARD, hover_color=COLOR_WIDGET, border_width=0,
+            corner_radius=6, height=28,
             command=lambda: webbrowser.open("https://trakteer.id/indravoyager")
         )
         btn_trakteer.grid(row=0, column=1, padx=(4, 0), sticky="ew")
@@ -123,9 +120,9 @@ class InfoDialog(ctk.CTkToplevel):
         # Close Button
         btn_close = ctk.CTkButton(
             self, text="CLOSE",
-            font=("Terminal", 10, "bold"), text_color=COLOR_WHITE,
-            fg_color="#2b2b2b", hover_color="#3a3a3a",
-            corner_radius=0, height=28,
+            font=("Consolas", 10, "bold"), text_color=COLOR_WHITE,
+            fg_color="#2b2b2b", hover_color="#3a3a3a", border_width=0,
+            corner_radius=6, height=28,
             command=self.destroy
         )
         btn_close.pack(pady=(12, 8))

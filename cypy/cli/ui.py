@@ -1,4 +1,4 @@
-# cypy/core/ui.py
+# cypy/cli/ui.py
 # ✦ Premium CLI UI and Console Grid Formatter for CYPY ✦
 
 import unicodedata

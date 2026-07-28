@@ -6,7 +6,7 @@ from PIL.Image import Image
 from cypy.core.providers._constants import DEFAULT_HEADERS
 from cypy.core.providers.base import LLMProvider
 from cypy.core.config import REQUEST_TIMEOUT
-from cypy.core.utils import image2base64
+from cypy.core.services.image_service import image2base64
 
 class OpenRouterProvider(LLMProvider):
     """
@@ -25,11 +25,9 @@ class OpenRouterProvider(LLMProvider):
         return "OpenRouter"
 
     def translate_image(self, /, image: Image, prompt: str) -> Optional[str]:
-        # Convert PIL Image to base64 data URI
         img_base64 = image2base64(image)
         data_uri = f"data:image/png;base64,{img_base64}"
 
-        # Validate the API key
         if not self.validate_api_key():
             raise ValueError("API_KEY_ERROR")
 
@@ -72,7 +70,6 @@ class OpenRouterProvider(LLMProvider):
 
         result = response.json()
 
-        # Extract the text content from OpenAI-compatible response
         try:
             content = result["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as e:

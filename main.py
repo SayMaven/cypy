@@ -6,39 +6,42 @@ import os
 if '--gui' not in sys.argv:
     sys.argv.append('--gui')
 
-def log_crash(tb_text):
-    # Try writing to current directory
+
+def _write_crash_log(tb_text, path):
+    """Write crash log to a specific path. Returns True on success."""
     try:
-        with open("cypy_crash.txt", "w", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
             f.write("CYPY Start Crash Log\n")
             f.write("====================\n")
             f.write(tb_text)
+        return True
     except Exception:
-        # Fallback to LOCALAPPDATA
-        try:
-            import os
-            appdata = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "cypy")
-            os.makedirs(appdata, exist_ok=True)
-            with open(os.path.join(appdata, "cypy_crash.txt"), "w", encoding="utf-8") as f:
-                f.write("CYPY Start Crash Log\n")
-                f.write("====================\n")
-                f.write(tb_text)
-        except:
-            pass
+        return False
 
-    # On Android, try writing to public external app files directory which is easy to read
+
+def log_crash(tb_text):
+    """Attempt to write crash log to multiple fallback locations."""
+    # Try current directory first
+    if _write_crash_log(tb_text, "cypy_crash.txt"):
+        return
+
+    # Fallback to LOCALAPPDATA
+    appdata = os.path.join(
+        os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "cypy"
+    )
+    if _write_crash_log(tb_text, os.path.join(appdata, "cypy_crash.txt")):
+        return
+
+    # On Android, try public external app files directory
     try:
-        # Check standard android paths
         package_name = "org.indravoyager.cypy"
         public_dir = f"/storage/emulated/0/Android/data/{package_name}/files"
         if os.path.exists(public_dir):
-            target_path = os.path.join(public_dir, "cypy_crash.txt")
-            with open(target_path, "w", encoding="utf-8") as f:
-                f.write("CYPY Start Crash Log\n")
-                f.write("====================\n")
-                f.write(tb_text)
+            _write_crash_log(tb_text, os.path.join(public_dir, "cypy_crash.txt"))
     except Exception:
         pass
+
 
 try:
     from cypy.app import main
@@ -47,4 +50,3 @@ try:
 except Exception as e:
     log_crash(traceback.format_exc())
     raise
-
