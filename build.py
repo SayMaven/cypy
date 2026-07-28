@@ -320,16 +320,24 @@ def package_cli_release():
         cleanup()
 
 def package_gui_release():
-    os_system = platform.system().lower()
-    if os_system == "windows":
-        # Under Option A, we do not package GUI ZIP on Windows (distributed via Installer)
-        return
-
     RELEASES_DIR.mkdir(parents=True, exist_ok=True)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
 
+    os_system = platform.system().lower()
     arch = normalize_arch(platform.machine())
     os_name = "macos" if os_system == "darwin" else os_system
+
+    gui_dist = DIST_DIR / "cypy-gui"
+    if not gui_dist.is_dir():
+        print(f"[Build] Error: Compiled GUI folder not found at: {gui_dist}", file=sys.stderr)
+        sys.exit(2)
+
+    app_folder_path = DIST_DIR / f"{APP_NAME}_pkg_temp"
+    if app_folder_path.is_dir():
+        try: shutil.rmtree(app_folder_path)
+        except Exception as e:
+            print(f"[Build] Warning: Failed to remove old temporary directory: {e}", file=sys.stderr)
+    app_folder_path.mkdir(exist_ok=True)
 
     if os_system == "linux":
         tar_name = f"{APP_NAME}_{APP_VER}_{os_name}_{arch}.tar.gz"
@@ -400,9 +408,9 @@ def package_gui_release():
         if not internal_dir.is_dir():
             internal_dir = bin_dir
     else:
-        zip_name = f"{APP_NAME}-{APP_VER}-{os_name}-{arch}-gui.zip"
+        zip_name = f"{APP_NAME}_{APP_VER}_{os_name}_{arch}.zip"
         zip_path = RELEASES_DIR / zip_name
-        print(f"[Build] Packaging GUI application for {os_name} ({arch})...")
+        print(f"[Build] Packaging GUI application for {os_name} ({arch}) as .zip...")
 
         for item in os.listdir(gui_dist):
             s = gui_dist / item
@@ -580,8 +588,38 @@ def run_build():
         print("\n=== BUILDING CYPY GUI ===")
         compile_pyinstaller("cypy-gui", noconsole=True, collect_dnd=True)
 
-        # Package GUI release archive (.zip)
+        # Rename cypy-gui.exe -> cypy.exe for clean executable naming
+        gui_exe = DIST_DIR / "cypy-gui" / "cypy-gui.exe"
+        target_exe = DIST_DIR / "cypy-gui" / "cypy.exe"
+        if gui_exe.is_file():
+            if target_exe.is_file():
+                try: target_exe.unlink()
+                except Exception: pass
+            gui_exe.rename(target_exe)
+            print("[Build] Renamed binary executable -> cypy.exe")
+
+        # Package GUI release archive (.zip or .tar.gz)
         package_gui_release()
+
+        # Compile Windows Setup Installer via Inno Setup if ISCC compiler is present
+        if platform.system().lower() == "windows":
+            iscc_path = shutil.which("iscc")
+            if not iscc_path:
+                possible_paths = [
+                    r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+                    r"C:\Program Files\Inno Setup 6\ISCC.exe"
+                ]
+                for p in possible_paths:
+                    if os.path.isfile(p):
+                        iscc_path = p
+                        break
+            if iscc_path and os.path.isfile(ROOT_DIR / "setup.iss"):
+                print(f"\n=== COMPILING WINDOWS SETUP INSTALLER ({iscc_path}) ===")
+                try:
+                    subprocess.check_call([iscc_path, str(ROOT_DIR / "setup.iss")])
+                    print("[Build] Windows Setup Installer compiled successfully into releases/!")
+                except Exception as e:
+                    print(f"[Build] Warning: Inno Setup compilation failed: {e}")
         
     finally:
         # Clean up temporary build spec/work path files
